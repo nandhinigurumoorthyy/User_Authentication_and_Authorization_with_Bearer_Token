@@ -1,7 +1,7 @@
 require("dotenv").config();
 
 const AuthRouter = require("./controllers/Auth.controller");
-const { createDbConnection } = require("./user");
+const { createDbConnection } = require("./db");
 
 // Establish database connection
 createDbConnection();
