@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 // Use environment variable or fallback URI for local development
-const mongoDBURI = process.env.MONGO_URI || "mongodb://localhost:27017/user";
+const mongoDBURI = process.env.MONGO_URI || "mongodb://localhost:27017/users";
 
 async function createDbConnection() {
   try {
