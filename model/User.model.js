@@ -10,7 +10,6 @@ const UserSchema = mongoose.Schema(
     email: {
       type: String,
       required: true,
-      unique: true,
     },
     password: {
       type: String,
@@ -18,9 +17,11 @@ const UserSchema = mongoose.Schema(
     },
     phoneNumber: {
       type: Number,
+      default: null,
     },
     age: {
       type: Number,
+      default: null,
     },
   },
   { timestamps: true }
@@ -29,20 +30,14 @@ const UserSchema = mongoose.Schema(
 // Pre-save middleware for hashing password
 UserSchema.pre("save", async function (next) {
   try {
-    // Check if the password is already hashed
     if (!this.isModified("password")) {
       return next();
     }
-
-    // Generate a salt
     const salt = await bcrypt.genSalt(10);
-
-    // Hash the password using the salt
     this.password = await bcrypt.hash(this.password, salt);
-
     next();
   } catch (error) {
-    next(error);
+    next(new Error("Error hashing the password"));
   }
 });
 
@@ -51,5 +46,7 @@ UserSchema.methods.comparePassword = async function (plainPassword) {
   return bcrypt.compare(plainPassword, this.password);
 };
 
+// Create model
 const UserModel = mongoose.model("users", UserSchema);
+
 module.exports = UserModel;
