@@ -37,8 +37,8 @@ AuthRouter.post("/login", async (request, response) => {
     // Generate the token
     const token = generateToken(
       {
-        username: user.username,
         email: user.email,
+        password: user.password,
       },
       user._id
     );
