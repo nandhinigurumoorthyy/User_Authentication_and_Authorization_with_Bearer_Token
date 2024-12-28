@@ -6,6 +6,77 @@ const express = require("express");
 
 const AuthRouter = express.Router();
 
+// create a user
+AuthRouter.post("/create", async (request, response) => {
+  const { password, ...rest } = request.body;
+
+  // Validate input fields
+  if (!password || !rest.email || !rest.username) {
+    return response.status(400).json({
+      message: "Required fields are missing!",
+    });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(rest.email)) {
+    return response.status(400).json({
+      message: "Invalid email format!",
+    });
+  }
+
+  if (password.length < 8) {
+    return response.status(400).json({
+      message: "Password must be at least 8 characters long!",
+    });
+  }
+
+  try {
+    // Check if email already exists
+    const existingUser = await UserModel.findOne({ email: rest.email });
+    if (existingUser) {
+      return response.status(409).json({
+        message: "Email is already registered!",
+      });
+    }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create and save the user
+    const user = new UserModel({
+      ...rest,
+      password: hashedPassword,
+    });
+
+    const result = await user.save();
+
+    // Generate token (optional)
+    const token = generateToken(
+      {
+        email: result.email,
+        username: result.username,
+      },
+      result._id
+    );
+
+    return response.status(201).json({
+      message: "User created successfully!",
+      token: `Bearer ${token}`, // Include token in response
+      user: {
+        id: result._id,
+        username: result.username,
+        email: result.email,
+      },
+    });
+  } catch (error) {
+    console.error("Error creating user:", error);
+    return response.status(500).json({
+      error: error.message,
+      message: "Something went wrong!",
+    });
+  }
+});
+
 // Route to login a user
 AuthRouter.post("/login", async (request, response) => {
   const { email, password } = request.body;
@@ -49,44 +120,6 @@ AuthRouter.post("/login", async (request, response) => {
     return response.status(200).json({
       message: "Logged in successfully",
       token: `Bearer ${token}`, // Return the Bearer token
-    });
-  } catch (error) {
-    return response.status(500).json({
-      error: error.message,
-      message: "Something went wrong !!!",
-    });
-  }
-});
-
-// Route to create a user
-AuthRouter.post("/create", async (request, response) => {
-  const { password, ...rest } = request.body;
-
-  if (!password || !rest.email || !rest.username) {
-    return response.status(400).json({
-      message: "Required fields are missing!!!",
-    });
-  }
-
-  try {
-    // Hash the password before saving the user
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create a new user with the hashed password
-    const user = new UserModel({
-      ...rest,
-      password: hashedPassword, // Store hashed password
-    });
-
-    const result = await user.save();
-
-    return response.status(201).json({
-      message: "User created successfully !!!",
-      user: {
-        id: result._id,
-        username: result.username,
-        email: result.email,
-      },
     });
   } catch (error) {
     return response.status(500).json({
