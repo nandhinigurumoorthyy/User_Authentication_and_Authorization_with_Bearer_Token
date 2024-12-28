@@ -67,11 +67,11 @@ AuthRouter.post("/create", async (request, response) => {
   }
 });
 
-
 // Route to login a user
 AuthRouter.post("/login", async (request, response) => {
   const { email, password } = request.body;
-
+  console.log("login email ", email);
+  console.log("login pass", password);
   if (!email || !password) {
     return response.status(400).json({
       message: "Email or password is missing!",
@@ -80,7 +80,7 @@ AuthRouter.post("/login", async (request, response) => {
 
   try {
     const user = await UserModel.findOne({ email });
-
+    console.log("user", user);
     if (!user) {
       return response.status(404).json({
         message: "User not found!",
@@ -89,9 +89,12 @@ AuthRouter.post("/login", async (request, response) => {
 
     // Hash the incoming password
     const hashedLoginPassword = await bcrypt.hash(password, 10);
+    console.log("hashedLoginPassword", hashedLoginPassword);
 
     // Compare manually by hashing and comparing
     if (hashedLoginPassword !== user.password) {
+      console.log("hashedLoginPassword", hashedLoginPassword);
+      console.log("user.password", user.password);
       return response.status(401).json({
         message: "Invalid credentials!",
       });
@@ -115,8 +118,6 @@ AuthRouter.post("/login", async (request, response) => {
     });
   }
 });
-
-
 
 // Route to get all users (protected route)
 AuthRouter.get("/", creationGuard, async (request, response) => {
