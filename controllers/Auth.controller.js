@@ -50,18 +50,8 @@ AuthRouter.post("/create", async (request, response) => {
 
     const result = await user.save();
 
-    // Generate token (optional)
-    const token = generateToken(
-      {
-        email: result.email,
-        username: result.username,
-      },
-      result._id
-    );
-
     return response.status(201).json({
       message: "User created successfully!",
-      token: `Bearer ${token}`, // Include token in response
       user: {
         id: result._id,
         username: result.username,
@@ -77,13 +67,15 @@ AuthRouter.post("/create", async (request, response) => {
   }
 });
 
+
 // Route to login a user
 AuthRouter.post("/login", async (request, response) => {
   const { email, password } = request.body;
   console.log("email: ", email, "password: ", password);
+
   if (!email || !password) {
     return response.status(400).json({
-      message: "Email or password is missing!!!",
+      message: "Email or password is missing!",
     });
   }
 
@@ -98,17 +90,15 @@ AuthRouter.post("/login", async (request, response) => {
 
     // Compare entered password with hashed password in the database
     const isMatch = await bcrypt.compare(String(password), user.password);
-    console.log(isMatch);
+    console.log("Password match:", isMatch);
+
     if (!isMatch) {
-      console.log("password ", password);
-      console.log("user.password ", user.password);
-      console.log("email ", user.email);
       return response.status(401).json({
         message: "Invalid credentials",
       });
     }
 
-    // Generate the token
+    // Generate the token upon successful login
     const token = generateToken(
       {
         email: user.email,
@@ -122,12 +112,14 @@ AuthRouter.post("/login", async (request, response) => {
       token: `Bearer ${token}`, // Return the Bearer token
     });
   } catch (error) {
+    console.error("Error during login:", error);
     return response.status(500).json({
       error: error.message,
-      message: "Something went wrong !!!",
+      message: "Something went wrong!",
     });
   }
 });
+
 
 // Route to get all users (protected route)
 AuthRouter.get("/", creationGuard, async (request, response) => {
