@@ -71,7 +71,6 @@ AuthRouter.post("/create", async (request, response) => {
 // Route to login a user
 AuthRouter.post("/login", async (request, response) => {
   const { email, password } = request.body;
-  console.log("email: ", email, "password: ", password);
 
   if (!email || !password) {
     return response.status(400).json({
@@ -81,44 +80,42 @@ AuthRouter.post("/login", async (request, response) => {
 
   try {
     const user = await UserModel.findOne({ email });
-    console.log("user", user);
+
     if (!user) {
       return response.status(404).json({
-        message: "User not found",
+        message: "User not found!",
       });
     }
 
-    // Compare entered password with hashed password in the database
-    const isMatch = await bcrypt.compare(String(password), user.password);
-    console.log("Password match:", isMatch);
+    // Hash the incoming password
+    const hashedLoginPassword = await bcrypt.hash(password, 10);
 
-    if (!isMatch) {
+    // Compare manually by hashing and comparing
+    if (hashedLoginPassword !== user.password) {
       return response.status(401).json({
-        message: "Invalid credentials",
+        message: "Invalid credentials!",
       });
     }
 
-    // Generate the token upon successful login
+    // Generate token after successful login
     const token = generateToken(
-      {
-        email: user.email,
-        username: user.username,
-      },
+      { email: user.email, username: user.username },
       user._id
     );
 
     return response.status(200).json({
-      message: "Logged in successfully",
-      token: `Bearer ${token}`, // Return the Bearer token
+      message: "Logged in successfully!",
+      token: `Bearer ${token}`,
     });
   } catch (error) {
     console.error("Error during login:", error);
     return response.status(500).json({
-      error: error.message,
       message: "Something went wrong!",
+      error: error.message,
     });
   }
 });
+
 
 
 // Route to get all users (protected route)
