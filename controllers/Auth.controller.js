@@ -26,7 +26,7 @@ AuthRouter.post("/login", async (request, response) => {
     }
 
     // Compare entered password with hashed password in the database
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(String(password), user.password);
     console.log(isMatch);
     if (!isMatch) {
       console.log("password ", password);

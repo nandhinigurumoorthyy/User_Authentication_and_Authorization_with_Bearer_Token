@@ -10,6 +10,7 @@ const UserSchema = mongoose.Schema(
     email: {
       type: String,
       required: true,
+      unique: true, // Ensure unique email addresses
     },
     password: {
       type: String,
@@ -17,11 +18,11 @@ const UserSchema = mongoose.Schema(
     },
     phoneNumber: {
       type: Number,
-      default: null,
+      default: null, // Default to null if not provided
     },
     age: {
       type: Number,
-      default: null,
+      default: null, // Default to null if not provided
     },
   },
   { timestamps: true }
@@ -37,13 +38,19 @@ UserSchema.pre("save", async function (next) {
     this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error) {
-    next(new Error("Error hashing the password"));
+    console.error("Error hashing the password:", error);
+    next(error);
   }
 });
 
 // Method to compare hashed password with plain text password
 UserSchema.methods.comparePassword = async function (plainPassword) {
-  return bcrypt.compare(plainPassword, this.password);
+  try {
+    return await bcrypt.compare(String(plainPassword), this.password);
+  } catch (error) {
+    console.error("Error comparing password:", error);
+    throw error;
+  }
 };
 
 // Create model
