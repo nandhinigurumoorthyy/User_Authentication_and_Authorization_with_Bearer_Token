@@ -6,33 +6,67 @@ const express = require("express");
 
 const AuthRouter = express.Router();
 
-// create a user
-AuthRouter.post("/create", async (request, response) => {
-  const { password, ...rest } = request.body;
+// Login Route
+AuthRouter.post("/login", async (request, response) => {
+  const { email, password } = request.body;
 
-  // Validate input fields
-  if (!password || !rest.email || !rest.username) {
+  if (!email || !password) {
+    return response.status(400).json({
+      message: "Email or password is missing!",
+    });
+  }
+
+  try {
+    // Find user by email
+    const user = await UserModel.findOne({ email });
+    if (!user) {
+      return response.status(404).json({
+        message: "User not found!",
+      });
+    }
+
+    // Compare hashed password with provided password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return response.status(401).json({
+        message: "Invalid credentials!",
+      });
+    }
+
+    // Generate token
+    const token = generateToken(
+      {
+        username: user.username,
+        email: user.email,
+      },
+      user._id
+    );
+
+    return response.status(200).json({
+      message: "Sign in successfully!",
+      token: `Bearer ${token}`,
+    });
+  } catch (error) {
+    return response.status(500).json({
+      message: "Something went wrong!",
+      error: error.message,
+    });
+  }
+});
+
+// Signup Route
+AuthRouter.post("/signup", async (request, response) => {
+  const { username, email, password } = request.body;
+
+  if (!username || !email || !password) {
     return response.status(400).json({
       message: "Required fields are missing!",
     });
   }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(rest.email)) {
-    return response.status(400).json({
-      message: "Invalid email format!",
-    });
-  }
-
-  if (password.length < 8) {
-    return response.status(400).json({
-      message: "Password must be at least 8 characters long!",
-    });
-  }
-
   try {
-    // Check if email already exists
-    const existingUser = await UserModel.findOne({ email: rest.email });
+    // Check if user already exists
+    const existingUser = await UserModel.findOne({ email });
     if (existingUser) {
       return response.status(409).json({
         message: "Email is already registered!",
@@ -43,75 +77,18 @@ AuthRouter.post("/create", async (request, response) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create and save the user
-    const user = new UserModel({
-      ...rest,
+    const newUser = new UserModel({
+      username,
+      email,
       password: hashedPassword,
     });
 
-    const result = await user.save();
+    const result = await newUser.save();
 
     return response.status(201).json({
-      message: "User created successfully!",
-      user: {
-        id: result._id,
-        username: result.username,
-        email: result.email,
-      },
+      message: "Sign up successfully!",
     });
   } catch (error) {
-    console.error("Error creating user:", error);
-    return response.status(500).json({
-      error: error.message,
-      message: "Something went wrong!",
-    });
-  }
-});
-
-// Route to login a user
-AuthRouter.post("/login", async (request, response) => {
-  const { email, password } = request.body;
-  console.log("login email ", email);
-  console.log("login pass", password);
-  if (!email || !password) {
-    return response.status(400).json({
-      message: "Email or password is missing!",
-    });
-  }
-
-  try {
-    const user = await UserModel.findOne({ email });
-    console.log("user", user);
-    if (!user) {
-      return response.status(404).json({
-        message: "User not found!",
-      });
-    }
-
-    // Hash the incoming password
-    const hashedLoginPassword = await bcrypt.hash(password, 10);
-    console.log("hashedLoginPassword", hashedLoginPassword);
-
-    // Compare manually by hashing and comparing
-    if (hashedLoginPassword !== user.password) {
-      console.log("hashedLoginPassword", hashedLoginPassword);
-      console.log("user.password", user.password);
-      return response.status(401).json({
-        message: "Invalid credentials!",
-      });
-    }
-
-    // Generate token after successful login
-    const token = generateToken(
-      { email: user.email, username: user.username },
-      user._id
-    );
-
-    return response.status(200).json({
-      message: "Logged in successfully!",
-      token: `Bearer ${token}`,
-    });
-  } catch (error) {
-    console.error("Error during login:", error);
     return response.status(500).json({
       message: "Something went wrong!",
       error: error.message,
