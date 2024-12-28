@@ -9,7 +9,7 @@ const AuthRouter = express.Router();
 // Route to login a user
 AuthRouter.post("/login", async (request, response) => {
   const { email, password } = request.body;
-
+  console.log("email: ", email, "password: ", password);
   if (!email || !password) {
     return response.status(400).json({
       message: "Email or password is missing!!!",
@@ -18,7 +18,7 @@ AuthRouter.post("/login", async (request, response) => {
 
   try {
     const user = await UserModel.findOne({ email });
-
+    console.log("user", user);
     if (!user) {
       return response.status(404).json({
         message: "User not found",
@@ -29,6 +29,9 @@ AuthRouter.post("/login", async (request, response) => {
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
+      console.log("password ", password);
+      console.log("user.password ", user.password);
+      console.log("email ", user.email);
       return response.status(401).json({
         message: "Invalid credentials",
       });
